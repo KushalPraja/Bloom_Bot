@@ -45,14 +45,49 @@ Design the following connections:
 ---
 
 ## Setup Instructions  
-1. **Hardware Setup:**  
+
+
+### 1. Repository Clone:
+   - Start by cloning this repository to access the project files:
+```bash git clone https://github.com/KushalPraja/Bloom_Bot
+cd Bloom_Bot
+
+###  2. Hardware Setup:
    - Assemble components as per the circuit diagram.  
    - Connect UART pins (TX/RX) between the two STM32 boards.  
    - Power the components and STM32 boards.  
 
-2. **Software Setup:**  
-   - Open STM32CubeIDE and create two separate projects: one for each STM32 board.  
-   - Configure UART communication in asynchronous mode using HAL libraries.  
-   - Implement analog-to-digital conversion for the moisture sensor and LDR on STM32 Board 1.  
-   - Transmit sensor data via UART from Board 1 to Board 2.  
-   - Decode received data on STM32 Board 2 and display it on the LCD
+### 3. Software Setup  
+
+#### Import Source Files  
+- Open **STM32CubeIDE** and create **two separate projects**, one for each STM32 board:  
+  - **Input Board (STM32 Board 1):**  
+    - Copy the `src` files from the **Input_Board** folder in the repository into the project for this board.  
+    - This board handles **analog-to-digital conversion** for the moisture sensor and LDR and transmits sensor data using **UART1**.  
+  - **Output Board (STM32 Board 2):**  
+    - Copy the `src` files from the **Output_Board** folder in the repository into the project for this board.  
+    - This board receives the UART data, decodes it, and displays it on the LCD.  
+
+#### Configuration and Libraries  
+- Ensure UART communication is configured in **asynchronous mode** using HAL libraries.  
+
+---
+
+### 4. Compilation and Upload  
+- Compile each project individually in **STM32CubeIDE**.  
+- Flash the binaries to the respective STM32 boards using a **ST-Link programmer**.  
+
+---
+
+### 5. Testing and Debugging  
+- Verify the system by checking that:  
+  - Sensor data is accurately transmitted from Board 1 to Board 2 via UART.  
+  - The LCD connected to Board 2 displays the data correctly.  
+- Use the UART debug tools in **STM32CubeIDE** for troubleshooting if needed.  
+
+---
+
+### 6. Explore the Repository  
+- For detailed explanations and additional resources, refer to the **README** and **project folders** on GitHub: [GitHub Repository](https://github.com/KushalPraja/Bloom_Bot).  
+
+
