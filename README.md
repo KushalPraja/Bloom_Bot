@@ -101,8 +101,8 @@ Bloombot is a project designed to demonstrate efficient communication and sensor
     - Copy the `src` files from the **Input_Board** folder in the repository into the project for this board.  
     - This board handles **analog-to-digital conversion** for the moisture sensor and LDR and transmits sensor data using **UART1**.  
   - **Output Board (STM32 Board 2):**  
-    - Copy the `src` files from the **Output_Board** folder in the repository into the project for this board.  
-    - This board receives the UART data, decodes it, and displays it on the LCD.  
+    - Copy the `src` files from the **Output_Board(Digital Or Analog)** folder in the repository into the project for this board.  
+    - This board receives the UART data, decodes it, and displays it on the LCD.  Choosing `Analog` Would Give a Light Reading based on resistance, while `Digital` will give you dark or bright, given a certain threshold.
 
 #### Configuration and Libraries  
 - Ensure UART communication is configured in **asynchronous mode** using HAL libraries.  
@@ -125,5 +125,4 @@ Bloombot is a project designed to demonstrate efficient communication and sensor
 
 ### 6. Explore the Repository  
 - For detailed explanations and additional resources, refer to the **README** and **project folders** on GitHub: [GitHub Repository](https://github.com/KushalPraja/Bloom_Bot).  
-
 
