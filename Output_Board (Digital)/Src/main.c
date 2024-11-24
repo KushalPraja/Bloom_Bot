@@ -41,46 +41,43 @@ int main(void)
   		    ssd1306_WriteString("Waiting for data...", Font_6x8, White);
   		    ssd1306_UpdateScreen();
 
-
-
-
   while (1)
   {
 	  if (HAL_UART_Receive(&huart1, (uint8_t *)uart_buffer, UART_BUFFER_SIZE - 1, HAL_MAX_DELAY) == HAL_OK) {
-	  		            // Ensure null termination
-	  		            uart_buffer[UART_BUFFER_SIZE - 1] = '\0';
-	  		            // Clear the display
-	  		            ssd1306_Fill(Black);
-	  		            ssd1306_SetCursor(0, 0);
-	  		            Read_Light_Sensor();
-	  		            // Display the received data
-	  		            ssd1306_WriteString("Plant Alarm v1.1", Font_6x8, White);
-	  		            ssd1306_SetCursor(0, 20); // Move cursor to the next line
-	  		            ssd1306_WriteString("Hydration:", Font_6x8, White);
-	  		            ssd1306_WriteString(uart_buffer, Font_6x8, White);
-	  		            ssd1306_SetCursor(0, 40); // Move cursor to the next line
-	  		            ssd1306_WriteString("Light:", Font_6x8, White);
-	  		            Read_Light_Sensor();
-	  		            ssd1306_WriteString(light_value_str, Font_6x8, White);
+      // Ensure null termination
+      uart_buffer[UART_BUFFER_SIZE - 1] = '\0';
+      // Clear the display
+      ssd1306_Fill(Black);
+      ssd1306_SetCursor(0, 0);
+      Read_Light_Sensor();
+      // Display the received data
+      ssd1306_WriteString("Plant Alarm v1.1", Font_6x8, White);
+      ssd1306_SetCursor(0, 20); // Move cursor to the next line
+      ssd1306_WriteString("Hydration:", Font_6x8, White);
+      ssd1306_WriteString(uart_buffer, Font_6x8, White);
+      ssd1306_SetCursor(0, 40); // Move cursor to the next line
+      ssd1306_WriteString("Light:", Font_6x8, White);
+      Read_Light_Sensor();
+      ssd1306_WriteString(light_value_str, Font_6x8, White);
 
-	  		            // Update the screen
-	  		            ssd1306_UpdateScreen();
-	  		            HAL_Delay(1000);
-	  		            int moisture_value = atoi(uart_buffer);
-	  		                        // Control PA1 based on moisture value
-	  		                        if (moisture_value < 100) {
-	  		                            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET); // Set PA1 high
-	  		                            ssd1306_Fill(Black);
-	  		                            ssd1306_SetCursor(0, 0);
-	  		                            ssd1306_WriteString("Please Water Plant! ", Font_6x8, White);
-	  		                            ssd1306_UpdateScreen();
-	  		                            HAL_Delay(500);
-	  		                        } else {
-	  		                            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); // Set PA1 low
-	  		                        }
-	  		            // Clear the UART buffer for the next data
-	  		            memset(uart_buffer, 0, UART_BUFFER_SIZE);
-	  		        }
+      // Update the screen
+      ssd1306_UpdateScreen();
+      HAL_Delay(1000);
+      int moisture_value = atoi(uart_buffer);
+                  // Control PA1 based on moisture value
+                  if (moisture_value < 100) {
+                      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET); // Set PA1 high
+                      ssd1306_Fill(Black);
+                      ssd1306_SetCursor(0, 0);
+                      ssd1306_WriteString("Please Water Plant! ", Font_6x8, White);
+                      ssd1306_UpdateScreen();
+                      HAL_Delay(500);
+                  } else {
+                      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); // Set PA1 low
+                  }
+      // Clear the UART buffer for the next data
+      memset(uart_buffer, 0, UART_BUFFER_SIZE);
+  }
   }
 
 }
