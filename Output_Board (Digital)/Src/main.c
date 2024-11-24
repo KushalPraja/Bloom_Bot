@@ -2,14 +2,20 @@
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
 #include <string.h>
-#define UART_BUFFER_SIZE 128
-char uart_buffer[UART_BUFFER_SIZE];
 #include <stdlib.h>
+
+#define UART_BUFFER_SIZE 128
+#define ADC_MAX_VALUE 4095
+#define ADC_VOLTAGE_REF 3.3f
+
+char uart_buffer[UART_BUFFER_SIZE];
 char light_value_str[32];
 
 I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart1;
 ADC_HandleTypeDef hadc1;
+
+// Function Prototypes
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
@@ -17,117 +23,82 @@ static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 void Read_Light_Sensor(void);
 void FloatToString(float value, char *str);
+void Update_Display(const char *moisture, const char *light);
+void Check_Moisture_And_Alert(int moisture_value);
 
-int main(void)
-{
+int main(void) {
+    HAL_Init();
+    SystemClock_Config();
+    MX_GPIO_Init();
+    MX_ADC1_Init();
+    MX_I2C1_Init();
+    MX_USART1_UART_Init();
 
-  HAL_Init();
+    // Initialize OLED display
+    ssd1306_Init();
+    ssd1306_Fill(Black);
+    ssd1306_UpdateScreen();
+    ssd1306_SetCursor(0, 0);
+    ssd1306_WriteString("Waiting for data...", Font_6x8, White);
+    ssd1306_UpdateScreen();
 
-  SystemClock_Config();
-
-  MX_GPIO_Init();
-  MX_ADC1_Init();
-  MX_I2C1_Init();
-  MX_USART1_UART_Init();
-
-  ssd1306_Init();
-  		    ssd1306_Fill(Black);
-  		    ssd1306_UpdateScreen();
-  		    // Set up the OLED cursor
-  		    ssd1306_SetCursor(0, 0);
-  		    // Clear the UART buffer
-  		    memset(uart_buffer, 0, UART_BUFFER_SIZE);
-  		    // Display a startup message
-  		    ssd1306_WriteString("Waiting for data...", Font_6x8, White);
-  		    ssd1306_UpdateScreen();
-
-  while (1)
-  {
-	  if (HAL_UART_Receive(&huart1, (uint8_t *)uart_buffer, UART_BUFFER_SIZE - 1, HAL_MAX_DELAY) == HAL_OK) {
-      // Ensure null termination
-      uart_buffer[UART_BUFFER_SIZE - 1] = '\0';
-      // Clear the display
-      ssd1306_Fill(Black);
-      ssd1306_SetCursor(0, 0);
-      Read_Light_Sensor();
-      // Display the received data
-      ssd1306_WriteString("Plant Alarm v1.1", Font_6x8, White);
-      ssd1306_SetCursor(0, 20); // Move cursor to the next line
-      ssd1306_WriteString("Hydration:", Font_6x8, White);
-      ssd1306_WriteString(uart_buffer, Font_6x8, White);
-      ssd1306_SetCursor(0, 40); // Move cursor to the next line
-      ssd1306_WriteString("Light:", Font_6x8, White);
-      Read_Light_Sensor();
-      ssd1306_WriteString(light_value_str, Font_6x8, White);
-
-      // Update the screen
-      ssd1306_UpdateScreen();
-      HAL_Delay(1000);
-      int moisture_value = atoi(uart_buffer);
-                  // Control PA1 based on moisture value
-                  if (moisture_value < 100) {
-                      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET); // Set PA1 high
-                      ssd1306_Fill(Black);
-                      ssd1306_SetCursor(0, 0);
-                      ssd1306_WriteString("Please Water Plant! ", Font_6x8, White);
-                      ssd1306_UpdateScreen();
-                      HAL_Delay(500);
-                  } else {
-                      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); // Set PA1 low
-                  }
-      // Clear the UART buffer for the next data
-      memset(uart_buffer, 0, UART_BUFFER_SIZE);
-  }
-  }
-
+    while (1) {
+        if (HAL_UART_Receive(&huart1, (uint8_t *)uart_buffer, UART_BUFFER_SIZE - 1, HAL_MAX_DELAY) == HAL_OK) {
+            uart_buffer[UART_BUFFER_SIZE - 1] = '\0';  // Ensure null termination
+            int moisture_value = atoi(uart_buffer);
+            // Read light sensor and convert to string
+            Read_Light_Sensor();
+            // Update OLED display
+            Update_Display(uart_buffer, light_value_str);
+            // Check moisture level and handle alerts
+            Check_Moisture_And_Alert(moisture_value);
+            // Clear UART buffer
+            memset(uart_buffer, 0, UART_BUFFER_SIZE);
+        }
+    }
 }
 
-
-
 void FloatToString(float value, char *str) {
-    int int_part = (int)value;  // Get the integer part
-    int frac_part = (int)((value - int_part) * 100);  // Get the fractional part (2 decimal places)
-
-    // Convert integer part to string
-    int i = 0;
-    while (int_part > 0) {
-        str[i++] = '0' + (int_part % 10);
-        int_part /= 10;
-    }
-
-    // Reverse the integer part string
-    for (int j = 0; j < i / 2; j++) {
-        char temp = str[j];
-        str[j] = str[i - j - 1];
-        str[i - j - 1] = temp;
-    }
-
-    // Add the decimal point
-    str[i++] = '.';
-
-    // Convert fractional part to string (2 decimal places)
-    if (frac_part < 10) {
-        str[i++] = '0';  // Add leading zero for single digit fractional part
-    }
-    str[i++] = '0' + (frac_part / 10);  // Tens place
-    str[i++] = '0' + (frac_part % 10);  // Ones place
-
-    str[i] = '\0';  // Null-terminate the string
+    snprintf(str, 32, "%.2f", value);  // Use snprintf for safer and cleaner float to string conversion
 }
 
 void Read_Light_Sensor(void) {
-    HAL_ADC_Start(&hadc1); // Start ADC conversion
+    HAL_ADC_Start(&hadc1);
     if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK) {
-        uint32_t adc_value = HAL_ADC_GetValue(&hadc1); // Get the ADC value
-        float light_value = (adc_value * 3.3f) / 4095.0f; // Convert ADC value to voltage (assuming 12-bit ADC and 3.3V reference)
-
-        // Convert the float light_value to string
+        uint32_t adc_value = HAL_ADC_GetValue(&hadc1);
+        float light_value = (adc_value * ADC_VOLTAGE_REF) / ADC_MAX_VALUE;
         FloatToString(light_value, light_value_str);
 
-        // Transmit the string via UART
+        // Optional: Transmit light value via UART
         HAL_UART_Transmit(&huart1, (uint8_t *)light_value_str, strlen(light_value_str), HAL_MAX_DELAY);
     }
-    HAL_ADC_Stop(&hadc1); // Stop ADC conversion
+    HAL_ADC_Stop(&hadc1);
+}
+
+void Update_Display(const char *moisture, const char *light) {
+    ssd1306_Fill(Black);
+    ssd1306_SetCursor(0, 0);
+    ssd1306_WriteString("Plant Alarm v1.1", Font_6x8, White);
+    ssd1306_SetCursor(0, 20);
+    ssd1306_WriteString("Hydration:", Font_6x8, White);
+    ssd1306_WriteString(moisture, Font_6x8, White);
+    ssd1306_SetCursor(0, 40);
+    ssd1306_WriteString("Light:", Font_6x8, White);
+    ssd1306_WriteString(light, Font_6x8, White);
+    ssd1306_UpdateScreen();
+}
+
+void Check_Moisture_And_Alert(int moisture_value) {
+    if (moisture_value < 100) {
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);  // Activate alert
+        ssd1306_Fill(Black);
+        ssd1306_SetCursor(0, 0);
+        ssd1306_WriteString("Please Water Plant!", Font_6x8, White);
+        ssd1306_UpdateScreen();
+        HAL_Delay(500);
+    } else {
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);  // Deactivate alert
+    }
 }
 
 
