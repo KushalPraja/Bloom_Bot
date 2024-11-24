@@ -44,8 +44,6 @@ Design the following connections:
 
 ---
 
-## Setup Instructions  
-
 # Bloombot Project Using Two STM32 Boards and UART Communication
 
 ## Overview  
